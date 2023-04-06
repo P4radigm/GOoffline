@@ -190,7 +190,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 216, y: 640}
+  m_SizeDelta: {x: 1286.4, y: 576}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &193567725
 MonoBehaviour:
@@ -825,6 +825,14 @@ PrefabInstance:
     - target: {fileID: 406632, guid: 6d0acc00cc82d436b9d11446d2ddfef6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11484734, guid: 6d0acc00cc82d436b9d11446d2ddfef6, type: 3}
+      propertyPath: m_settings.emails.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 11484734, guid: 6d0acc00cc82d436b9d11446d2ddfef6, type: 3}
+      propertyPath: m_settings.emails.Array.data[0]
+      value: random@leonvanoldenborgh.nl
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1602,9 +1610,13 @@ MonoBehaviour:
   session: {fileID: 1211494079}
   sessionOrigin: {fileID: 1405189306}
   cameraManager: {fileID: 448435681}
+  canvasScaler: {fileID: 1129891512}
   downSampleFactor: 1
-  xCutoffPercentage: 100
-  yCutoffPercentage: 100
+  squareBasedOnXPercentage: 1
+  xCutoffPercentage: 70
+  yCutoffPercentage: 70
+  xBufferPercentage: 4
+  yBufferPercentage: 8
   debugResultText: {fileID: 581624110}
   debugScanArea: {fileID: 446359160}
   debugImageSize: 2

@@ -19,6 +19,7 @@ public class CodeReaderManager : MonoBehaviour {
     [SerializeField] private ARSession session;
     [SerializeField] private XROrigin sessionOrigin;
     [SerializeField] private ARCameraManager cameraManager;
+    [SerializeField] private CanvasScaler canvasScaler;
     private bool scanningEnabled = false;
     private Texture2D cameraImageTexture;
     private Result result;
@@ -35,8 +36,14 @@ public class CodeReaderManager : MonoBehaviour {
 
     [Header("Settings")]
     [SerializeField] private int downSampleFactor;
+    [Space(10)]
+    [SerializeField] private bool squareBasedOnXPercentage = false;
+    [Space(5)]
     [SerializeField] [Range(0, 100)] private float xCutoffPercentage;
     [SerializeField] [Range(0, 100)] private float yCutoffPercentage;
+    [Space(5)]
+    [SerializeField] [Range(0, 100)] private float xBufferPercentage;
+    [SerializeField] [Range(0, 100)] private float yBufferPercentage;
     private RectInt pictureFocusRect = new RectInt(0, 0, 100, 100);
 
     [Header("Debug")]
@@ -81,16 +88,38 @@ public class CodeReaderManager : MonoBehaviour {
         {
             //Image size = 640 x 480
 
-            xCutoffPercentage *= 0.01f;
-            yCutoffPercentage *= 0.01f;
+            //Calc actual cutoff used
+            float xCutoff = xCutoffPercentage * 0.01f;
+            float yCutoff = yCutoffPercentage * 0.01f;
+            float xBuffer = xBufferPercentage * 0.01f;
+            float yBuffer = yBufferPercentage * 0.01f;
+
+            //Get Canvas Scaler max coords based on reference resolution (not dynamic when MatchWidthHeight gets changed from 1)
+            float maxCoordX = canvasScaler.referenceResolution.y * ((float)Screen.width / (float)Screen.height);
+            float maxCoordY = canvasScaler.referenceResolution.y;
 
             //Calc screenspace overlay for what part of the image gets scanned
-            debugScanArea.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(Screen.width * xCutoffPercentage), Mathf.CeilToInt(Screen.height * yCutoffPercentage));
+            debugScanArea.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff + xBuffer, 0, 100)), Mathf.CeilToInt(maxCoordY * Mathf.Clamp(yCutoff + yBuffer, 0, 100)));
+            debugImage.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordY * yCutoff), Mathf.CeilToInt(maxCoordX * xCutoff));
 
-            float leftAnchor = (image.width / 2f) - (Mathf.CeilToInt(image.width * yCutoffPercentage) / 2f);
-            float botAnchor = (image.height / 2f) - ((Mathf.CeilToInt((image.width * (Screen.width / Screen.height)) * xCutoffPercentage)) / 2f);
-            float imageWidth = image.width * yCutoffPercentage;
-            float imageHeight = (image.width * (Screen.width / Screen.height)) * xCutoffPercentage;
+            float leftAnchor = ((float)image.width / 2f) - ((float)image.width * yCutoff / 2f);
+            float botAnchor = ((float)image.height / 2f) - (((float)image.width * ((float)Screen.width / (float)Screen.height)) * xCutoff / 2f);
+            float imageWidth = (float)image.width * yCutoff;
+            float imageHeight = ((float)image.width * ((float)Screen.width / (float)Screen.height)) * xCutoff;
+
+            //Adjust for square option
+            if (squareBasedOnXPercentage)
+            {
+                debugScanArea.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff + xBuffer, 0, 100)), Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff + xBuffer, 0, 100)));
+                debugImage.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * xCutoff), Mathf.CeilToInt(maxCoordX * xCutoff));
+
+                leftAnchor = ((float)image.width / 2f) - (((float)image.width * ((float)Screen.width / (float)Screen.height)) * xCutoff / 2f);
+                imageWidth = ((float)image.width * ((float)Screen.width / (float)Screen.height)) * xCutoff;
+            }
+
+
+            /* //Debug
+            Debug.Log($"Screen Resolution = {Screen.width} x {Screen.height}");
 
             Debug.Log($"Left Anchor = {leftAnchor}");
             Debug.Log($"Bottom Anchor = {botAnchor}");
@@ -99,14 +128,11 @@ public class CodeReaderManager : MonoBehaviour {
 
             Debug.Log($"Input Image size = {image.width} x {image.height}");
 
-            /*
-            //Calc focus area to be scanned in the recieved image
-            pictureFocusRect = new RectInt(
-                (image.height / 2) - (Mathf.CeilToInt(image.height * yCutoffPercentage) / 2),
-                (image.width / 2) - (Mathf.CeilToInt((image.height * (Screen.width / Screen.height)) * xCutoffPercentage) / 2),
-                Mathf.CeilToInt(image.height * yCutoffPercentage),
-                Mathf.CeilToInt((image.height * (Screen.width / Screen.height)) * xCutoffPercentage)
-                );
+            leftAnchor = 0;
+            botAnchor = 0;
+            imageWidth = (float)image.width;
+            imageHeight = (float)image.height;
+            debugImage.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordY), Mathf.CeilToInt(maxCoordX));
             */
 
             pictureFocusRect = new RectInt(
@@ -161,9 +187,6 @@ public class CodeReaderManager : MonoBehaviour {
 
         // Done with your temporary data, so you can dispose it.
         buffer.Dispose();
-
-        // Debug image size calc
-        debugImage.rectTransform.sizeDelta = new Vector2(cameraImageTexture.width * debugImageSize, cameraImageTexture.height * debugImageSize);
 
         //Send to debug image visualiser
         Sprite debugSprite = Sprite.Create(cameraImageTexture, new Rect(0, 0, cameraImageTexture.width, cameraImageTexture.height), new Vector2(0.5f, 0.5f));

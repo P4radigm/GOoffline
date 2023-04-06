@@ -99,7 +99,7 @@ public class CodeReaderManager : MonoBehaviour {
             float maxCoordY = canvasScaler.referenceResolution.y;
 
             //Calc screenspace overlay for what part of the image gets scanned
-            debugScanArea.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff + xBuffer, 0, 100)), Mathf.CeilToInt(maxCoordY * Mathf.Clamp(yCutoff + yBuffer, 0, 100)));
+            debugScanArea.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff - xBuffer, 0, 100)), Mathf.CeilToInt(maxCoordY * Mathf.Clamp(yCutoff - yBuffer, 0, 100)));
             debugImage.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordY * yCutoff), Mathf.CeilToInt(maxCoordX * xCutoff));
 
             float leftAnchor = ((float)image.width / 2f) - ((float)image.width * yCutoff / 2f);
@@ -110,7 +110,7 @@ public class CodeReaderManager : MonoBehaviour {
             //Adjust for square option
             if (squareBasedOnXPercentage)
             {
-                debugScanArea.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff + xBuffer, 0, 100)), Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff + xBuffer, 0, 100)));
+                debugScanArea.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff - xBuffer, 0, 100)), Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff - xBuffer, 0, 100)));
                 debugImage.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * xCutoff), Mathf.CeilToInt(maxCoordX * xCutoff));
 
                 leftAnchor = ((float)image.width / 2f) - (((float)image.width * ((float)Screen.width / (float)Screen.height)) * xCutoff / 2f);

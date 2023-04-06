@@ -1613,10 +1613,10 @@ MonoBehaviour:
   canvasScaler: {fileID: 1129891512}
   downSampleFactor: 1
   squareBasedOnXPercentage: 1
-  xCutoffPercentage: 70
-  yCutoffPercentage: 70
-  xBufferPercentage: 4
-  yBufferPercentage: 8
+  xCutoffPercentage: 80
+  yCutoffPercentage: 80
+  xBufferPercentage: 7
+  yBufferPercentage: 12
   debugResultText: {fileID: 581624110}
   debugScanArea: {fileID: 446359160}
   debugImageSize: 2

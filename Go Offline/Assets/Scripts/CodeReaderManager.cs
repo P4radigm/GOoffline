@@ -14,6 +14,7 @@ public class CodeReaderManager : MonoBehaviour {
 
     [Header("Output")]
     [SerializeField] public string lastResult = "";
+    [SerializeField] public string lastResultText = "";
 
     [Header("Needed")]
     [SerializeField] private ARSession session;
@@ -24,6 +25,9 @@ public class CodeReaderManager : MonoBehaviour {
     private Texture2D cameraImageTexture;
     private Result result;
     private bool firstImage = true;
+    private CollectibleGenerator collectibleGenerator;
+    private CollectibleManager collectibleManager;
+    private Color swapfietsColor;
 
     private IBarcodeReader barcodeReader = new BarcodeReader {
         AutoRotate = true,
@@ -51,12 +55,13 @@ public class CodeReaderManager : MonoBehaviour {
     [Space(10)]
     [SerializeField] private Image debugScanArea;
     [Space(10)]
-    [SerializeField] private float debugImageSize;
     [SerializeField] private Image debugImage;
 
     private void Awake()
     {
         firstImage = true;
+        collectibleGenerator = CollectibleGenerator.instance;
+        collectibleManager = CollectibleManager.instance;
     }
 
     private void OnEnable() {
@@ -117,24 +122,6 @@ public class CodeReaderManager : MonoBehaviour {
                 imageWidth = ((float)image.width * ((float)Screen.width / (float)Screen.height)) * xCutoff;
             }
 
-
-            /* //Debug
-            Debug.Log($"Screen Resolution = {Screen.width} x {Screen.height}");
-
-            Debug.Log($"Left Anchor = {leftAnchor}");
-            Debug.Log($"Bottom Anchor = {botAnchor}");
-            Debug.Log($"X Size = {imageWidth}");
-            Debug.Log($"Y Size = {imageHeight}");
-
-            Debug.Log($"Input Image size = {image.width} x {image.height}");
-
-            leftAnchor = 0;
-            botAnchor = 0;
-            imageWidth = (float)image.width;
-            imageHeight = (float)image.height;
-            debugImage.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordY), Mathf.CeilToInt(maxCoordX));
-            */
-
             pictureFocusRect = new RectInt(
                 Mathf.FloorToInt(leftAnchor),
                 Mathf.FloorToInt(botAnchor),
@@ -188,19 +175,137 @@ public class CodeReaderManager : MonoBehaviour {
         // Done with your temporary data, so you can dispose it.
         buffer.Dispose();
 
-        //Send to debug image visualiser
-        Sprite debugSprite = Sprite.Create(cameraImageTexture, new Rect(0, 0, cameraImageTexture.width, cameraImageTexture.height), new Vector2(0.5f, 0.5f));
-        debugImage.sprite = debugSprite;
-
         // Detect and decode the barcode inside the bitmap
         result = barcodeReader.Decode(cameraImageTexture.GetPixels32(), cameraImageTexture.width, cameraImageTexture.height);
 
+        //!!!!Take reading over a period of a couple of seconds and see which one shows up the most to get an accurate reading.
+
         // Do something with the result
         if (result != null) {
+            if (lastResultText == result.Text)
+            {
+                //Maybe after idk 1 minute after og scan time give pop-up that you should scan something new
+                return;
+            }
+
+            // Detect the color of the swapfiets?
+            //WriteAverageColorOnLine(cameraImageTexture, result);
+            //Debug.Log("Average color: " + swapfietsColor);
+
+            // Compare the average color against the predefined colors
+            //Color closestColor = CompareColors(swapfietsColor, collectibleManager.swapfietsColors);
+            //Debug.Log("Closest color: " + closestColor);
+
+            //Send to debug image visualiser
+            Sprite debugSprite = Sprite.Create(cameraImageTexture, new Rect(0, 0, cameraImageTexture.width, cameraImageTexture.height), new Vector2(0.5f, 0.5f));
+            debugImage.sprite = debugSprite;
+
+            //Output to debug Text
             lastResult = $"{result.Text}, {result.BarcodeFormat}";
             debugResultText.text = lastResult;
+
+            //Send to New Collectible Generator (Need ot implemint minigame step before that at some point)
+            collectibleGenerator.FinishedMinigameCollectible(result.Text, Random.Range(0, 5));
+
+            lastResultText = result.Text;
         }
     }
+
+    //private void WriteAverageColorOnLine(Texture2D texture, Result result)
+    //{
+    //    // Check barcode result
+    //    if (result == null)
+    //    {
+    //        return;
+    //    }
+
+    //    // Get barcode location and size
+    //    var location = result.ResultPoints;
+    //    var x1 = location[0].X;
+    //    var y1 = texture.height - location[0].Y;
+    //    var x2 = location[1].X;
+    //    var y2 = texture.height - location[1].Y;
+
+    //    // Calculate angle of barcode
+    //    var angle = Mathf.Atan2(y2 - y1, x2 - x1) * Mathf.Rad2Deg;
+
+    //    // Calculate rotation matrix
+    //    var pivot = new Vector2(x1, y1);
+    //    var rotationMatrix = Matrix4x4.TRS(-pivot, Quaternion.Euler(0, 0, angle), Vector3.one) *
+    //                          Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(1, -1, 1)) *
+    //                          Matrix4x4.TRS(pivot, Quaternion.identity, Vector3.one);
+
+    //    // Rotate the line points
+    //    var p1 = rotationMatrix.MultiplyPoint(new Vector3(x1, y1, 0));
+    //    var p2 = rotationMatrix.MultiplyPoint(new Vector3(x2, y2, 0));
+
+    //    // Calculate line parameters
+    //    var dx = p2.x - p1.x;
+    //    var dy = p2.y - p1.y;
+    //    var length = Mathf.Sqrt(dx * dx + dy * dy);
+    //    var unitDx = dx / length;
+    //    var unitDy = dy / length;
+
+    //    // Calculate average color along the line
+    //    var pixelCount = 0;
+    //    var totalColor = Color.black;
+    //    for (var i = 0; i < length; i++)
+    //    {
+    //        var x = Mathf.RoundToInt(p1.x + i * unitDx);
+    //        var y = Mathf.RoundToInt(p1.y + i * unitDy);
+
+    //        // Get color of pixel at (x, y)
+    //        if (x >= 0 && x < texture.width && y >= 0 && y < texture.height)
+    //        {
+    //            totalColor += texture.GetPixel(x, y);
+    //            pixelCount++;
+    //        }
+    //    }
+
+    //    // Calculate average color
+    //    if (pixelCount > 0)
+    //    {
+    //        var averageColor = totalColor / pixelCount;
+
+    //        // Write average color to each pixel along the line
+    //        for (var i = 0; i < length; i++)
+    //        {
+    //            var x = Mathf.RoundToInt(p1.x + i * unitDx);
+    //            var y = Mathf.RoundToInt(p1.y + i * unitDy);
+
+    //            // Set color of pixel at (x, y)
+    //            if (x >= 0 && x < texture.width && y >= 0 && y < texture.height)
+    //            {
+    //                texture.SetPixel(x, y, averageColor);
+    //            }
+    //        }
+
+    //        // Apply the changes to the texture
+    //        texture.Apply();
+    //    }
+    //}
+
+    //private Color CompareColors(Color targetColor, List<Color> colors)
+    //{
+    //    Color closestColor = Color.white;
+    //    float closestDistance = float.MaxValue;
+    //    Color.RGBToHSV(targetColor, out float targetHue, out _, out _);
+    //    foreach (Color color in colors)
+    //    {
+    //        Color.RGBToHSV(color, out float hue, out _, out _);
+    //        float distance = Mathf.Abs(hue - targetHue);
+    //        if (distance > 0.5f)
+    //        {
+    //            distance = 1f - distance;
+    //        }
+    //        if (distance < closestDistance)
+    //        {
+    //            closestDistance = distance;
+    //            closestColor = color;
+    //        }
+    //    }
+    //    return closestColor;
+    //}
 
     public void ToggleScanning() {
         scanningEnabled = !scanningEnabled;

@@ -29,6 +29,8 @@ public class CollectibleManager : MonoBehaviour
     [SerializeField] private int maxNameAmount; 
     public FontOptions[] fontOptions;
     public string[] rarityOptions;
+    public RectTransform topEdgeTransform;
+    public RectTransform botEdgeTransform;
 
     [Header("In Play")]
     private CollectibleGenerator collectibleGenerator;
@@ -70,7 +72,17 @@ public class CollectibleManager : MonoBehaviour
         string[] names = new string[maxNameAmount];
         Array.Copy(textAsset.text.Split('\n'), names, maxNameAmount);
 
+        for (int i = 0; i < names.Length; i++)
+        {
+            names[i] = names[i].TrimEnd('\r');
+        }
+
         return names;
+    }
+
+    public int GetPupilShape(int index)
+    {
+        return pupilSideOptions[index];
     }
 
     public string GetRarity(int index)

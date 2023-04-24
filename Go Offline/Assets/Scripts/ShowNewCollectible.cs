@@ -23,6 +23,8 @@ public class ShowNewCollectible : MonoBehaviour
         {
             Destroy(gameObject);
         }
+
+        prefabVisual.gameObject.SetActive(false);
     }
     public void GotNewCollectible(CollectibleUnit newUnit)
     {

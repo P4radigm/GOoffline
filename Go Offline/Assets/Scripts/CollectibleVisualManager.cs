@@ -22,6 +22,8 @@ public class CollectibleVisualManager : MonoBehaviour
     [Space(10)]
     [SerializeField] private Rectangle topBackground;
     [SerializeField] private Rectangle botBackground;
+    [SerializeField] private Disc botLeftBackgroundCircle;
+    [SerializeField] private Disc botRightBackgroundCircle;
     [SerializeField] private Rectangle rarityBackground;
     [SerializeField] private Rectangle levelBackground;
 
@@ -34,8 +36,20 @@ public class CollectibleVisualManager : MonoBehaviour
         collectibleManager = CollectibleManager.instance;
     }
 
+    private void Awake()
+    {
+        collectibleManager = CollectibleManager.instance;
+    }
+
+    private void Start()
+    {
+        collectibleManager = CollectibleManager.instance;
+    }
+
     public void DisplayNewCollectibleUnit(CollectibleUnit unitToDisplay)
     {
+        collectibleManager = CollectibleManager.instance;
+
         //Set Colors
         Recolor(unitToDisplay.color);
 
@@ -52,7 +66,7 @@ public class CollectibleVisualManager : MonoBehaviour
         pupil.Radius = unitToDisplay.pupilSize;
 
         //Set Pupil Shape
-        pupil.Sides = unitToDisplay.pupilShape;
+        pupil.Sides = collectibleManager.GetPupilShape(unitToDisplay.pupilShape);
 
         //Set Name
         nameText.text = unitToDisplay.collectibleName;
@@ -61,11 +75,11 @@ public class CollectibleVisualManager : MonoBehaviour
         nameText.font = collectibleManager.GetFontAsset(unitToDisplay.font);
         nameText.fontSize = collectibleManager.GetFontSize(unitToDisplay.font);
 
-        //Set Rarity
-        rarityText.text = collectibleManager.GetRarity(unitToDisplay.rarity);
-
         //Set Current Level
         levelText.text = unitToDisplay.currentLevel.ToString();
+
+        //Set Rarity
+        rarityText.text = collectibleManager.GetRarity(unitToDisplay.rarity);
     }
 
     private void Recolor(Color newColor)
@@ -78,6 +92,8 @@ public class CollectibleVisualManager : MonoBehaviour
         levelBackground.Color = newColor;
         topBackground.Color = new Color(newColor.r, newColor.g, newColor.b, oldColorBackgroundTop.a);
         botBackground.Color = new Color(newColor.r, newColor.g, newColor.b, oldColorBackgroundBot.a);
+        botLeftBackgroundCircle.Color = new Color(newColor.r, newColor.g, newColor.b, oldColorBackgroundBot.a);
+        botRightBackgroundCircle.Color = new Color(newColor.r, newColor.g, newColor.b, oldColorBackgroundBot.a);
 
         nameText.color = newColor;
     }

@@ -11,6 +11,8 @@ public class CollectibleGenerator : MonoBehaviour
 {
     private CollectibleManager collectibleManager;
     private ShowNewCollectible showNewCollectible;
+    [SerializeField] private GameObject alreadyScannedTodayPopUp;
+    [SerializeField] private float scannedTodayPopUpTime;
 
     [Header("Options")]
     [Space(10)]
@@ -89,7 +91,7 @@ public class CollectibleGenerator : MonoBehaviour
     }
 
     //Generate new scriptableObject and add to inventory list -> Also immediatly add to JSON save file.
-    public void FinishedMinigameCollectible(string barcodeReadout, float possibleLevelIncrement)
+    public void ScannedBarcode(string barcodeReadout, float possibleLevelIncrement)
     {
         if(barcodeReadout.Length < 8)
         {
@@ -108,11 +110,14 @@ public class CollectibleGenerator : MonoBehaviour
         string filePath = Path.Combine(Application.persistentDataPath, $"{convertedBarcode}.json");
         if (File.Exists(filePath))
         {
-            CollectibleUnit scannedCollectible = returnCollectibleFromJson(filePath);
+            CollectibleUnit scannedCollectible = ReturnCollectibleFromJson(filePath);
+
             if (CollectibleIsScannedToday(scannedCollectible))
             {
                 Debug.Log("Barcode was already scanned today, come back tomorrow");
                 //Need to send this to some UI element
+                alreadyScannedTodayPopUp.SetActive(true);
+                alreadyScannedTodayPopUp.GetComponent<TimedPopUp>().StartDisableTimer(scannedTodayPopUpTime);
                 return;
             }
 
@@ -125,36 +130,40 @@ public class CollectibleGenerator : MonoBehaviour
             }
 
             IncrementCollectibleLevel(scannedCollectible, Mathf.FloorToInt(possibleLevelIncrement));
-            //Show ]collectible to player
+            
+            //Show collectible to player
             showNewCollectible.GotNewCollectible(scannedCollectible);
 
             return;
         }
 
         //Create scriptable object instance
-        CollectibleUnit newCollectible = ScriptableObject.CreateInstance<CollectibleUnit>();
+        CollectibleUnit newCollectible = new()
+        {
+            //Set params
+            originString = convertedBarcode.ToString(),
 
-        //Set params
-        newCollectible.originString = convertedBarcode.ToString();
+            color = collectibleManager.swapfietsColors[GetIndexRange(convertedBarcode, colorPositionRange.x, colorPositionRange.y)],
 
-        newCollectible.color = collectibleManager.swapfietsColors[GetIndexRange(convertedBarcode, colorPositionRange.x, colorPositionRange.y)];
+            collectibleName = GetCollectibleName(GetIndexRange(convertedBarcode, namePositionRange.x, namePositionRange.y)),
+            font = GetIndexRange(convertedBarcode, fontPositionRange.x, fontPositionRange.y),
 
-        newCollectible.collectibleName = GetCollectibleName(GetIndexRange(convertedBarcode, namePositionRange.x, namePositionRange.y));
-        newCollectible.font = GetIndexRange(convertedBarcode, fontPositionRange.x, fontPositionRange.y);
+            rarity = GetIndexRange(convertedBarcode, rarityPositionRange.x, rarityPositionRange.y),
+            startLevel = GetIndexRange(convertedBarcode, startLevelPositionRange.x, startLevelPositionRange.y),
 
-        newCollectible.rarity = GetIndexRange(convertedBarcode, rarityPositionRange.x, rarityPositionRange.y);
-        newCollectible.startLevel = GetIndexRange(convertedBarcode, startLevelPositionRange.x, startLevelPositionRange.y);
-        newCollectible.currentLevel = newCollectible.startLevel;
+            currentLevel = GetIndexRange(convertedBarcode, startLevelPositionRange.x, startLevelPositionRange.y),
 
-        newCollectible.lineCoords = ReadoutLineCoords(GetIndexRange(convertedBarcode, coordsPositionRange.x, coordsPositionRange.y));
-        newCollectible.lineWidth = InterpolateIndexRange(GetIndexRange(convertedBarcode, lineWidthPositionRange.x, lineWidthPositionRange.y), collectibleManager.minMaxLineWidth.x, collectibleManager.minMaxLineWidth.y);
-       
-        newCollectible.pupilShape = GetIndexRange(convertedBarcode, pupilShapePositionRange.x, pupilShapePositionRange.y);
-        newCollectible.pupilSize = InterpolateIndexRange(GetIndexRange(convertedBarcode, pupilSizePositionRange.x, pupilSizePositionRange.y), collectibleManager.minMaxPupilSize.x, collectibleManager.minMaxPupilSize.y);
-        newCollectible.eyePosition = InterpolateIndexRange(GetIndexRange(convertedBarcode, eyePositionPositionRange.x, eyePositionPositionRange.y), collectibleManager.minMaxEyePosition.x, collectibleManager.minMaxEyePosition.y);
+            lineCoords = ReadoutLineCoords(GetIndexRange(convertedBarcode, coordsPositionRange.x, coordsPositionRange.y)),
+            lineWidth = InterpolateIndexRange(GetIndexRange(convertedBarcode, lineWidthPositionRange.x, lineWidthPositionRange.y), collectibleManager.minMaxLineWidth.x, collectibleManager.minMaxLineWidth.y),
 
-        newCollectible.firstScanDateUtc = CollectibleManager.DateTimeToLong(DateTime.UtcNow);
-        newCollectible.lastScanDateUtc = CollectibleManager.DateTimeToLong(DateTime.UtcNow);
+            pupilShape = GetIndexRange(convertedBarcode, pupilShapePositionRange.x, pupilShapePositionRange.y),
+            pupilSize = InterpolateIndexRange(GetIndexRange(convertedBarcode, pupilSizePositionRange.x, pupilSizePositionRange.y), collectibleManager.minMaxPupilSize.x, collectibleManager.minMaxPupilSize.y),
+            eyePosition = InterpolateIndexRange(GetIndexRange(convertedBarcode, eyePositionPositionRange.x, eyePositionPositionRange.y), collectibleManager.minMaxEyePosition.x, collectibleManager.minMaxEyePosition.y),
+
+            firstScanDateUtc = CollectibleManager.DateTimeToLong(DateTime.UtcNow),
+            lastScanDateUtc = CollectibleManager.DateTimeToLong(DateTime.UtcNow)
+        };
+
 
         //Add collected unit to JSON library
         SaveCollectibelUnitToJson(newCollectible);
@@ -162,11 +171,11 @@ public class CollectibleGenerator : MonoBehaviour
         //add to session collectible list
         collectibleManager.collectedUnits.Add(newCollectible);
 
-        //Show new collectible to player
+        //Show new collectible to player & check if it's time for a levelup
         showNewCollectible.GotNewCollectible(newCollectible);
     }
 
-    private CollectibleUnit returnCollectibleFromJson(string filePath)
+    private CollectibleUnit ReturnCollectibleFromJson(string filePath)
     {
         // Load the JSON data from the file
         string jsonData = File.ReadAllText(filePath);
@@ -189,15 +198,34 @@ public class CollectibleGenerator : MonoBehaviour
         string updatedJsonData = JsonUtility.ToJson(loadedUnit);
 
         // Write the updated JSON string back to the file
-        string filePath = Path.Combine(Application.persistentDataPath, $"{loadedUnit.originString.ToString()}.json");
+        string filePath = Path.Combine(Application.persistentDataPath, $"{loadedUnit.originString}.json");
 
         File.WriteAllText(filePath, updatedJsonData);
     }
 
     private void SaveCollectibelUnitToJson(CollectibleUnit inputUnit)
     {
+        /*
+        Debug.Log($"collectibleUnit.originString = {inputUnit.originString}");
+        Debug.Log($"collectibleUnit.color = {inputUnit.color}");
+        Debug.Log($"collectibleUnit.collectibleName = {inputUnit.collectibleName}");
+        Debug.Log($"collectibleUnit.font = {inputUnit.font}");
+        Debug.Log($"collectibleUnit.rarity = {inputUnit.rarity}");
+        Debug.Log($"collectibleUnit.startLevel = {inputUnit.startLevel}");
+        Debug.Log($"collectibleUnit.currentLevel = {inputUnit.currentLevel}");
+        Debug.Log($"collectibleUnit.lineCoords = {inputUnit.lineCoords}");
+        Debug.Log($"collectibleUnit.lineWidth = {inputUnit.lineWidth}");
+        Debug.Log($"collectibleUnit.pupilShape = {inputUnit.pupilShape}");
+        Debug.Log($"collectibleUnit.pupilSize = {inputUnit.pupilSize}");
+        Debug.Log($"collectibleUnit.eyePosition = {inputUnit.eyePosition}");
+        Debug.Log($"collectibleUnit.firstScanDateUtc = {inputUnit.firstScanDateUtc}");
+        Debug.Log($"collectibleUnit.lastScanDateUtc = {inputUnit.lastScanDateUtc}");
+        */
+
         // Serialize CollectibleUnit to JSON string
         string jsonString = JsonUtility.ToJson(inputUnit);
+
+        Debug.Log($"jsonString = {jsonString}");
 
         // Write JSON string to file
         string filePath = Path.Combine(Application.persistentDataPath, $"{inputUnit.originString}.json");
@@ -218,7 +246,7 @@ public class CollectibleGenerator : MonoBehaviour
         for (int i = 0; i < input.Length; i++)
         {
             char c = input[i];
-            digitString[i] = char.IsDigit(c) ? c : '0';
+            digitString[i] = char.IsDigit(c) ? c : '9';
         }
 
         string result = new string(digitString);
@@ -232,7 +260,7 @@ public class CollectibleGenerator : MonoBehaviour
         int inputLength = input.ToString().Length;
         int extracted = (int)Mathf.Floor((input % (IntPow(10, inputLength - start))) / IntPow(10, inputLength - end - 1));
 
-        Debug.Log($"Output of index extractor = {extracted}, input: {input}, start: {start}, end: {end}");
+        //Debug.Log($"Output of index extractor = {extracted}, input: {input}, start: {start}, end: {end}");
 
         return extracted;
     }
@@ -286,11 +314,8 @@ public class CollectibleGenerator : MonoBehaviour
         
         for (int i = 0; i < inputLength; i++)
         {
-            Debug.Log($"{i} 1 IndexNumber = {indexNumber}");
             indexNumber += Mathf.FloorToInt(coordsReversed[i].y * 19.032001f);
-            Debug.Log($"{i} 2 IndexNumber = {indexNumber}");
             indexNumber %= coordsinOrder.Count;
-            Debug.Log($"{i} 3 IndexNumber = {indexNumber}");
 
             coordsNewOrder.Add(new Vector2(coordsinOrder[indexNumber].x, coordsinOrder[indexNumber].y % inputLength));
             coordsinOrder.RemoveAt(indexNumber);

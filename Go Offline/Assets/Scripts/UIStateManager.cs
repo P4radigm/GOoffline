@@ -2,15 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class UIStateManager : MonoBehaviour
 {
 
-    [SerializeField] private TextMeshProUGUI stateDebugText;
+    //[SerializeField] private TextMeshProUGUI stateDebugText;
     [SerializeField] private OnScreenMenu onScreenMenu;
     [SerializeField] private BackgroundFilter backgroundFilter;
     [SerializeField] private SlideInMenu slideInMenu;
     private CodeReaderManager codeReader;
+    private SettingsManager settingsManager;
 
     public InterfaceState activeInterfaceState = InterfaceState.Scanner;
 
@@ -49,9 +51,13 @@ public class UIStateManager : MonoBehaviour
     private void Start()
     {
         codeReader = CodeReaderManager.instance;
+        settingsManager = SettingsManager.instance;
 
-        codeReader.SetScanningEnabled(true);
-        SetCodeReaderStateText();
+        activeInterfaceState = settingsManager.settings.firstTime ? InterfaceState.Welcome : InterfaceState.Scanner;
+
+        if (settingsManager.settings.firstTime) { InitToWelcome(); }
+        SetInterfaceState(activeInterfaceState);
+        //SetCodeReaderStateText();
     }
 
     public void SetInterfaceState(InterfaceState newState)
@@ -59,6 +65,17 @@ public class UIStateManager : MonoBehaviour
         activeInterfaceState = newState;
         if(newState == InterfaceState.Scanner) { codeReader.SetScanningEnabled(true); }
         else { codeReader.SetScanningEnabled(false); }
+    }
+
+    private void InitToWelcome()
+    {
+        if (activeInterfaceState != InterfaceState.Animating)
+        {
+            slideInMenu.StartSlideInAnim(InterfaceState.Welcome);
+            onScreenMenu.StartHideMenuAnim();
+            backgroundFilter.StartAnimateIn(slideInMenu.slideInDuration);
+            backgroundFilter.GetComponent<Button>().interactable = false;
+        }
     }
 
     public void PressFilterButton()
@@ -162,9 +179,21 @@ public class UIStateManager : MonoBehaviour
         }
     }
 
-    public void SetCodeReaderStateText()
+    public void PressGoButton()
     {
-        if (!stateDebugText.gameObject.activeInHierarchy) { return; }
-        stateDebugText.text = codeReader.DebugShowCurrentState();
+        if (activeInterfaceState != InterfaceState.Animating)
+        {
+            settingsManager.ChangeFirstTimeStatus(false);
+            slideInMenu.StartSlideOutAnim();
+            onScreenMenu.StartShowMenuAnim();
+            backgroundFilter.StartAnimateOut(slideInMenu.slideOutDuration);
+            backgroundFilter.GetComponent<Button>().interactable = true;
+        }
     }
+
+    //public void SetCodeReaderStateText()
+    //{
+    //    if (!stateDebugText.gameObject.activeInHierarchy) { return; }
+    //    stateDebugText.text = codeReader.DebugShowCurrentState();
+    //}
 }

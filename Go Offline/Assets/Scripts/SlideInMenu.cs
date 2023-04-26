@@ -38,6 +38,7 @@ public class SlideInMenu : MonoBehaviour
     [SerializeField] private RectTransform settingsContent;
     [SerializeField] private SettingsUI settingsUI;
     [SerializeField] private RectTransform welcomeContent;
+    [SerializeField] private WelcomeManager welcomeManager;
 
     [Header("Slide In Settings")]
     [SerializeField] private AnimationCurve slideInCurve;
@@ -218,6 +219,7 @@ public class SlideInMenu : MonoBehaviour
 
                 //needed content initiation
                 welcomeContent.gameObject.SetActive(true);
+                welcomeManager.Init();
 
                 title.text = titleTexts[5];
                 titleBackground.sizeDelta = new Vector2(titleBackgroundWidths[5], 100);

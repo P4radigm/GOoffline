@@ -22,11 +22,12 @@ public class CodeReaderManager : MonoBehaviour {
     [SerializeField] private XROrigin sessionOrigin;
     [SerializeField] private ARCameraManager cameraManager;
     [SerializeField] private CanvasScaler canvasScaler;
+    [SerializeField] private RectTransform scanArea;
     private Texture2D cameraImageTexture;
     private Result result;
     private bool firstImage = true;
     private CollectibleGenerator collectibleGenerator;
-    private CollectibleManager collectibleManager;
+    private SettingsManager settingsManager;
     //private Color swapfietsColor;
 
     private IBarcodeReader barcodeReader = new BarcodeReader {
@@ -39,8 +40,6 @@ public class CodeReaderManager : MonoBehaviour {
     };
 
     [Header("Settings")]
-    [SerializeField] private int downSampleFactor;
-    [Space(10)]
     [SerializeField] private bool squareBasedOnXPercentage = false;
     [Space(5)]
     [SerializeField][Range(0, 100)] private float xCutoffPercentage;
@@ -72,11 +71,10 @@ public class CodeReaderManager : MonoBehaviour {
     public bool scanningEnabled;
 
     [Header("Debug")]
-    [SerializeField] private TextMeshProUGUI debugResultText;
-    [Space(10)]
-    [SerializeField] private RectTransform debugScanArea;
-    [Space(10)]
-    [SerializeField] private Image debugImage;
+    //[SerializeField] private TextMeshProUGUI debugResultText;
+    //[Space(10)]
+    //[Space(10)]
+    //[SerializeField] private Image debugImage;
 
     public static CodeReaderManager instance = null;
 
@@ -93,16 +91,20 @@ public class CodeReaderManager : MonoBehaviour {
             Destroy(gameObject);
         }
 
+    }
+
+    private void Start()
+    {
         firstImage = true;
         collectibleGenerator = CollectibleGenerator.instance;
-        collectibleManager = CollectibleManager.instance;
+        settingsManager = SettingsManager.instance;
     }
 
     private void OnEnable() {
         //Subscribe to frameRecieved event
         cameraManager.frameReceived += OnCameraFrameReceived;
 
-        debugResultText.text = "No Barcode Found";
+        //debugResultText.text = "No Barcode Found";
     }
 
     private void OnDisable() {
@@ -137,8 +139,8 @@ public class CodeReaderManager : MonoBehaviour {
             float maxCoordY = canvasScaler.referenceResolution.y;
 
             //Calc screenspace overlay for what part of the image gets scanned
-            debugScanArea.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff - xBuffer, 0, 100)), Mathf.CeilToInt(maxCoordY * Mathf.Clamp(yCutoff - yBuffer, 0, 100)));
-            debugImage.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordY * yCutoff), Mathf.CeilToInt(maxCoordX * xCutoff));
+            scanArea.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff - xBuffer, 0, 100)), Mathf.CeilToInt(maxCoordY * Mathf.Clamp(yCutoff - yBuffer, 0, 100)));
+            //debugImage.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordY * yCutoff), Mathf.CeilToInt(maxCoordX * xCutoff));
 
             float leftAnchor = ((float)image.width / 2f) - ((float)image.width * yCutoff / 2f);
             float botAnchor = ((float)image.height / 2f) - (((float)image.width * ((float)Screen.width / (float)Screen.height)) * xCutoff / 2f);
@@ -148,8 +150,8 @@ public class CodeReaderManager : MonoBehaviour {
             //Adjust for square option
             if (squareBasedOnXPercentage)
             {
-                debugScanArea.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff - xBuffer, 0, 100)), Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff - xBuffer, 0, 100)));
-                debugImage.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * xCutoff), Mathf.CeilToInt(maxCoordX * xCutoff));
+                scanArea.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff - xBuffer, 0, 100)), Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff - xBuffer, 0, 100)));
+                //debugImage.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * xCutoff), Mathf.CeilToInt(maxCoordX * xCutoff));
 
                 leftAnchor = ((float)image.width / 2f) - (((float)image.width * ((float)Screen.width / (float)Screen.height)) * xCutoff / 2f);
                 imageWidth = ((float)image.width * ((float)Screen.width / (float)Screen.height)) * xCutoff;
@@ -172,7 +174,7 @@ public class CodeReaderManager : MonoBehaviour {
             inputRect = pictureFocusRect,
 
             // Downsample by downSampleFactor.
-            outputDimensions = new Vector2Int(pictureFocusRect.width / downSampleFactor, pictureFocusRect.height / downSampleFactor),
+            outputDimensions = new Vector2Int(pictureFocusRect.width / settingsManager.settings.scannerDownscaleFactor, pictureFocusRect.height / settingsManager.settings.scannerDownscaleFactor),
 
             // Choose RGBA format.
             outputFormat = TextureFormat.RGBA32,
@@ -213,8 +215,8 @@ public class CodeReaderManager : MonoBehaviour {
         result = barcodeReader.Decode(cameraImageTexture.GetPixels32(), cameraImageTexture.width, cameraImageTexture.height);
 
         //Send to debug image visualiser
-        Sprite debugSprite = Sprite.Create(cameraImageTexture, new Rect(0, 0, cameraImageTexture.width, cameraImageTexture.height), new Vector2(0.5f, 0.5f));
-        debugImage.sprite = debugSprite;
+        //Sprite debugSprite = Sprite.Create(cameraImageTexture, new Rect(0, 0, cameraImageTexture.width, cameraImageTexture.height), new Vector2(0.5f, 0.5f));
+        //debugImage.sprite = debugSprite;
 
         //Check if we even have a result
         if(result == null)
@@ -284,12 +286,15 @@ public class CodeReaderManager : MonoBehaviour {
         {
             //Pop-up that you should go scan something new
             Debug.Log($"This {newResult} is the same barcode as last time...");
+            collectibleGenerator.alreadyScannedTodayPopUp.SetActive(true);
+            string notificationText = $"You have scanned this bike already, now let's go find a new one!";
+            collectibleGenerator.alreadyScannedTodayPopUp.GetComponent<AlreadyScannedPopUp>().StartPopUp(notificationText, collectibleGenerator.scannedTodayPopUpTime);
             return;
         }
 
         //Output to debug Text
-        lastResult = $"{newResult.Text}, {newResult.BarcodeFormat}";
-        debugResultText.text = lastResult;
+        //lastResult = $"{newResult.Text}, {newResult.BarcodeFormat}";
+        //debugResultText.text = lastResult;
 
         //Send to New Collectible Generator (Need ot implement minigame step before that at some point)
         collectibleGenerator.ScannedBarcode(newResult.Text, Random.Range(0, 5));

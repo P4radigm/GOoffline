@@ -17,6 +17,7 @@ public class CollectibleManager : MonoBehaviour
     }
 
     [Header("Collectible Settings")]
+    [Space(5)]
     public bool deleteSaveDataOnStart;
     [Space(10)]
     public List<Color> swapfietsColors = new List<Color>();
@@ -29,6 +30,10 @@ public class CollectibleManager : MonoBehaviour
     [SerializeField] private int maxNameAmount; 
     public FontOptions[] fontOptions;
     public string[] rarityOptions;
+
+    [Header("UI")]
+    public int[] criticalQuestionMilestone;
+    public float criticalQuestionDelay;
     public RectTransform topEdgeTransform;
     public RectTransform botEdgeTransform;
 
@@ -51,12 +56,15 @@ public class CollectibleManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    }
 
+    private void Start()
+    {
         //Get CollectibleGenerator
         collectibleGenerator = CollectibleGenerator.instance;
 
         //Possibly delete all JSON files
-        collectibleGenerator.DeleteAllSaveData();
+        if (deleteSaveDataOnStart) { collectibleGenerator.DeleteAllSaveData(); }
 
         //Readout all JSON files for collectible units
         collectibleGenerator.ReGenerateCollectibles();

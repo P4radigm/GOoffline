@@ -57,6 +57,7 @@ public class CollectionManager : MonoBehaviour
     private float[] underlinesLeftStart = new float[5];
 
     private CollectibleManager collectibleManager;
+    private SettingsManager settingsManager;
 
     public enum sortingOption
     {
@@ -75,6 +76,8 @@ public class CollectionManager : MonoBehaviour
     public void Init()
     {
         collectibleManager = CollectibleManager.instance;
+        settingsManager = SettingsManager.instance;
+        selectedSortingMethod = (sortingOption)settingsManager.settings.sortingMode;
         sortingMenuOpen = false;
         isAnimating = false;
         Display(selectedSortingMethod);
@@ -98,6 +101,9 @@ public class CollectionManager : MonoBehaviour
         selectedSortingMethod = sortingMethod;
 
         SortList(sortingMethod);
+
+        //Save used sorting method to settings
+        settingsManager.ChangeSortingMethod((int)sortingMethod);
 
         //Instantiate prefabs and load with correct collectible
         int rowIndex = 0;

@@ -1,8 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine;
-using System.Linq;
 using System.IO;
 using System;
 
@@ -10,9 +8,10 @@ using System;
 public class CollectibleGenerator : MonoBehaviour
 {
     private CollectibleManager collectibleManager;
-    private ShowNewCollectible showNewCollectible;
-    [SerializeField] private GameObject alreadyScannedTodayPopUp;
-    [SerializeField] private float scannedTodayPopUpTime;
+    public GameObject alreadyScannedTodayPopUp;
+    public float scannedTodayPopUpTime;
+    [SerializeField] private NewCollectibleBehaviour newCollectibleVisual;
+    [SerializeField] private LevelUpCollectibleBehaviour levelCollectibleVisual;
 
     [Header("Options")]
     [Space(10)]
@@ -53,12 +52,12 @@ public class CollectibleGenerator : MonoBehaviour
         {
             Destroy(gameObject);
         }
+
     }
 
     private void Start()
     {
         collectibleManager = CollectibleManager.instance;
-        showNewCollectible = ShowNewCollectible.instance;
     }
 
     //Regenerate all units based on JSON files
@@ -72,9 +71,12 @@ public class CollectibleGenerator : MonoBehaviour
         // load each file and add to the units list
         foreach (string file in files)
         {
+            Debug.Log($"Trying to regenerate collectible from {file}");
             string jsonString = File.ReadAllText(file);
             CollectibleUnit unit = JsonUtility.FromJson<CollectibleUnit>(jsonString);
+            Debug.Log($"Succesfully read unit from {file}");
             collectibleManager.collectedUnits.Add(unit);
+            Debug.Log($"Succesfully added unit to collectibles from {file}");
         }
     }
 
@@ -88,6 +90,9 @@ public class CollectibleGenerator : MonoBehaviour
         {
             File.Delete(file);
         }
+
+        collectibleManager.collectedUnits.Clear();
+        CodeReaderManager.instance.lastResult = "";
     }
 
     //Generate new scriptableObject and add to inventory list -> Also immediatly add to JSON save file.
@@ -115,25 +120,18 @@ public class CollectibleGenerator : MonoBehaviour
             if (CollectibleIsScannedToday(scannedCollectible))
             {
                 Debug.Log("Barcode was already scanned today, come back tomorrow");
+                
                 //Need to send this to some UI element
                 alreadyScannedTodayPopUp.SetActive(true);
-                alreadyScannedTodayPopUp.GetComponent<TimedPopUp>().StartDisableTimer(scannedTodayPopUpTime);
+                string popUpText = $"Bike was already scanned today, come back tomorrow to level your {scannedCollectible.collectibleName} up!";
+                alreadyScannedTodayPopUp.GetComponent<AlreadyScannedPopUp>().StartPopUp(popUpText, scannedTodayPopUpTime);
+
                 return;
             }
 
-            if (scannedCollectible.currentLevel == 100)
-            {
-                Debug.Log("level cap reached for this collectible");
-
-                //Level cap reached -> send to some UI element
-                return;
-            }
-
-            IncrementCollectibleLevel(scannedCollectible, Mathf.FloorToInt(possibleLevelIncrement));
-            
-            //Show collectible to player
-            showNewCollectible.GotNewCollectible(scannedCollectible);
-
+            //Show Level Up to player
+            levelCollectibleVisual.StartLevelAnim(scannedCollectible, Mathf.FloorToInt(possibleLevelIncrement));
+           
             return;
         }
 
@@ -171,8 +169,9 @@ public class CollectibleGenerator : MonoBehaviour
         //add to session collectible list
         collectibleManager.collectedUnits.Add(newCollectible);
 
-        //Show new collectible to player & check if it's time for a levelup
-        showNewCollectible.GotNewCollectible(newCollectible);
+        //Show new collectible to player
+        newCollectibleVisual.gameObject.SetActive(true);
+        newCollectibleVisual.StartDisplayAnim(newCollectible);
     }
 
     private CollectibleUnit ReturnCollectibleFromJson(string filePath)
@@ -185,11 +184,11 @@ public class CollectibleGenerator : MonoBehaviour
         return loadedUnit;
     }
 
-    private void IncrementCollectibleLevel(CollectibleUnit loadedUnit, int levelIncrement)
+    public void IncrementCollectibleLevel(CollectibleUnit loadedUnit, int levelIncrement)
     {
         // Increment the currentLevel attribute
         loadedUnit.currentLevel += levelIncrement;
-        Mathf.Clamp(loadedUnit.currentLevel, 0, 100);
+        Mathf.Clamp(loadedUnit.currentLevel, 0, 99);
 
         //Set last scanned time
         loadedUnit.lastScanDateUtc = CollectibleManager.DateTimeToLong(DateTime.UtcNow);

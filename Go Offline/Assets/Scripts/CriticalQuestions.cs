@@ -1,13 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using Shapes;
 using TMPro;
 
 public class CriticalQuestions : MonoBehaviour
 {
     private CollectibleManager collectibleManager;
+    public static CriticalQuestions instance = null;
 
     [SerializeField] private GameObject parent;
     [SerializeField] private string[] questionList;
@@ -16,9 +16,40 @@ public class CriticalQuestions : MonoBehaviour
     [SerializeField] private TextMeshProUGUI questionText;
     [SerializeField] private TextMeshProUGUI numberText;
 
+    private float delayTimer = 0;
+    private bool delaying = false;
+
+    private void Awake()
+    {
+        if (instance == null)
+        {
+            instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
     void Start()
     {
         collectibleManager = CollectibleManager.instance;
+    }
+
+    private void Update()
+    {
+        if(!delaying) { return; }
+
+        if(delayTimer > 0)
+        {
+            delayTimer -= Time.deltaTime;
+            if (delayTimer <= 0)
+            {
+                Show();
+                delaying = false;
+            }
+        }
     }
 
     public void RecolorHighlights(Color newCol)
@@ -34,14 +65,15 @@ public class CriticalQuestions : MonoBehaviour
         }
     }
 
-    public void ShowQuestion(int questionIndex)
+    public void ShowQuestion(int questionIndex, float delay)
     {
         questionText.text = questionList[questionIndex];
         numberText.text = questionIndex.ToString();
 
         RecolorHighlights(collectibleManager.swapfietsColors[questionIndex]);
 
-        Show();
+        delayTimer = delay;
+        delaying = true;
     }
     
     public void Show()

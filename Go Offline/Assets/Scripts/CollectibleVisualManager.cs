@@ -14,12 +14,18 @@ public class CollectibleVisualManager : MonoBehaviour
     [SerializeField] private RectTransform eyePivot;
     [SerializeField] private RegularPolygon pupil;
     [Space(5)]
+    [SerializeField] private float maxPupilRadius;
+    [Space(5)]
     [SerializeField]  private Disc eyeBorder;
+    [SerializeField]  private Disc eyeLid;
+
     [Space(10)]
     [SerializeField] private TextMeshProUGUI rarityText;
-    [SerializeField] private TextMeshProUGUI levelText;
+    public TextMeshProUGUI levelText;
     [SerializeField] private TextMeshProUGUI nameText;
     [Space(10)]
+    [SerializeField] private Rectangle cardBackground;
+    [SerializeField] private float maxColoredBackgroundAlpha;
     [SerializeField] private Rectangle topBackground;
     [SerializeField] private Rectangle botBackground;
     [SerializeField] private Disc botLeftBackgroundCircle;
@@ -28,8 +34,17 @@ public class CollectibleVisualManager : MonoBehaviour
     [SerializeField] private Rectangle levelBackground;
 
     [Header("Needed")]
+    [SerializeField] private AnimationCurve eyeAnimCurve;
     public CollectibleUnit visibleUnit;
-    private CollectibleManager collectibleManager;
+    [HideInInspector] public CollectibleManager collectibleManager;
+    private bool isAnimating = false;
+    private float eyeTimer;
+    private float eyeAnimDuration;
+    private bool animateOpen;
+    private float eyeAngStart;
+    private float eyeAngEnd;
+    private float eyeMaskStartYPos;
+
 
     private void OnEnable()
     {
@@ -44,6 +59,25 @@ public class CollectibleVisualManager : MonoBehaviour
     private void Start()
     {
         collectibleManager = CollectibleManager.instance;
+    }
+
+    protected virtual void Update()
+    {
+        if (!isAnimating) { return; }
+
+        if (eyeTimer > 0)
+        {
+            eyeTimer -= Time.deltaTime;
+
+            float evaluatedTimeValue = eyeAnimCurve.Evaluate(1 - (eyeTimer / eyeAnimDuration));
+            float newAngStart = Mathf.Lerp(eyeAngStart, animateOpen ? (Mathf.PI * 0.5f) : (Mathf.PI * -0.5f), evaluatedTimeValue);
+            float newAngEnd = Mathf.Lerp(eyeAngEnd, animateOpen ? (Mathf.PI * 0.5f) : (Mathf.PI * 1.5f), evaluatedTimeValue);
+
+            eyeLid.AngRadiansStart = newAngStart;
+            eyeLid.AngRadiansEnd = newAngEnd;
+
+            if (eyeTimer <= 0) { eyeLid.enabled = !animateOpen; isAnimating = false; }
+        }
     }
 
     public void DisplayNewCollectibleUnit(CollectibleUnit unitToDisplay)
@@ -68,6 +102,9 @@ public class CollectibleVisualManager : MonoBehaviour
         //Set Pupil Shape
         pupil.Sides = collectibleManager.GetPupilShape(unitToDisplay.pupilShape);
 
+        //Set Pupil to random position within eye
+        SetPupilToRandomPosition();
+
         //Set Name
         nameText.text = unitToDisplay.collectibleName;
 
@@ -80,6 +117,8 @@ public class CollectibleVisualManager : MonoBehaviour
 
         //Set Rarity
         rarityText.text = collectibleManager.GetRarity(unitToDisplay.rarity);
+
+        visibleUnit = unitToDisplay;
     }
 
     private void Recolor(Color newColor)
@@ -88,6 +127,7 @@ public class CollectibleVisualManager : MonoBehaviour
         Color oldColorBackgroundBot = botBackground.Color;
         bodyLine.Color = newColor;
         eyeBorder.Color = newColor;
+        eyeLid.Color = newColor;
         rarityBackground.Color = newColor;
         levelBackground.Color = newColor;
         topBackground.Color = new Color(newColor.r, newColor.g, newColor.b, oldColorBackgroundTop.a);
@@ -96,6 +136,52 @@ public class CollectibleVisualManager : MonoBehaviour
         botRightBackgroundCircle.Color = new Color(newColor.r, newColor.g, newColor.b, oldColorBackgroundBot.a);
 
         nameText.color = newColor;
+    }
+
+    public void SetCardAlpha(float newAlpha)
+    {
+        cardBackground.Color = new Color(cardBackground.Color.r, cardBackground.Color.g, cardBackground.Color.b, newAlpha);
+        rarityBackground.Color = new Color(rarityBackground.Color.r, rarityBackground.Color.g, rarityBackground.Color.b, newAlpha);
+        levelBackground.Color = new Color(levelBackground.Color.r, levelBackground.Color.g, levelBackground.Color.b, newAlpha);
+
+        topBackground.Color = new Color(topBackground.Color.r, topBackground.Color.g, topBackground.Color.b, newAlpha * maxColoredBackgroundAlpha);
+        botBackground.Color = new Color(botBackground.Color.r, botBackground.Color.g, botBackground.Color.b, newAlpha * maxColoredBackgroundAlpha);
+        botLeftBackgroundCircle.Color = new Color(botLeftBackgroundCircle.Color.r, botLeftBackgroundCircle.Color.g, botLeftBackgroundCircle.Color.b, newAlpha * maxColoredBackgroundAlpha);
+        botRightBackgroundCircle.Color = new Color(botRightBackgroundCircle.Color.r, botRightBackgroundCircle.Color.g, botRightBackgroundCircle.Color.b, newAlpha * maxColoredBackgroundAlpha);
+
+        nameText.color = new Color(nameText.color.r, nameText.color.g, nameText.color.b, newAlpha);
+        rarityText.color = new Color(rarityText.color.r, rarityText.color.g, rarityText.color.b, newAlpha);
+        levelText.color = new Color(levelText.color.r, levelText.color.g, levelText.color.b, newAlpha);
+    }
+
+    public void AnimateEyeLid(bool toOpen, float animationTime)
+    {
+        Debug.Log($"Animating Eye Lid = toOpen = {toOpen}");
+        eyeAngStart = eyeLid.AngRadiansStart;
+        eyeAngEnd = eyeLid.AngRadiansEnd;
+
+        eyeLid.enabled = true;
+        animateOpen = toOpen;
+        eyeAnimDuration = animationTime;
+        eyeTimer = animationTime;
+        isAnimating = true;
+    }
+
+    public void SetPupilToRandomPosition()
+    {
+        // Generate a random point within the circle
+        float angle = Random.Range(0, Mathf.PI * 2);
+        Vector2 randomPoint = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * Random.Range(0, maxPupilRadius);
+
+        // Set the child RectTransform's position to the random point within the circle
+        pupil.GetComponent<RectTransform>().anchoredPosition = randomPoint;
+    }
+
+    public void SetEyelid(bool isOpen)
+    {
+        eyeLid.AngRadiansStart = isOpen ? (Mathf.PI * 0f) : (Mathf.PI * -0.5f);
+        eyeLid.AngRadiansEnd = isOpen ? (Mathf.PI * 1f) : (Mathf.PI * 1.5f);
+        eyeLid.enabled = !isOpen;
     }
 
     private void SetBodyCoords(List<Vector2> newCoords)

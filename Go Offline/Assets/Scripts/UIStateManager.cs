@@ -43,7 +43,7 @@ public class UIStateManager : MonoBehaviour
             Destroy(gameObject);
         }
 
-        Application.targetFrameRate = 120;
+        Application.targetFrameRate = 30;
     }
 
     private void Start()

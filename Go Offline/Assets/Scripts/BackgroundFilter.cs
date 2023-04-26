@@ -32,22 +32,22 @@ public class BackgroundFilter : MonoBehaviour
 
         if (inTimer > 0)
         {
+            inTimer -= Time.deltaTime;
             float evaluatedTimeValue = animateInCurve.Evaluate(1 - (inTimer / inDuration));
             Color newColor = Color.Lerp(currentColor, activeColor, evaluatedTimeValue);
 
             image.color = newColor;
 
-            inTimer -= Time.deltaTime;
             if (inTimer <= 0) { isAnimating = false; button.interactable = true; }
         }
         else if (outTimer > 0)
         {
+            outTimer -= Time.deltaTime;
             float evaluatedTimeValue = animateOutCurve.Evaluate(1 - (outTimer / outDuration));
             Color newColor = Color.Lerp(currentColor, inActiveColor, evaluatedTimeValue);
 
             image.color = newColor;
 
-            outTimer -= Time.deltaTime;
             if (outTimer <= 0) { isAnimating = false; image.enabled = false; }
         }
     }

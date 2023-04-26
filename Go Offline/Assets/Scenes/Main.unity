@@ -12768,7 +12768,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1279362031}
+  - {fileID: 1707644478}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -13211,6 +13211,8 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   inActiveColor: {r: 0, g: 0, b: 0, a: 0}
+  button: {fileID: 1049375914}
+  image: {fileID: 1049375912}
 --- !u!114 &1049375916
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16201,43 +16203,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1272156360}
   m_CullTransparentMesh: 1
---- !u!21 &1279362031
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Rect Additive (instance)
-  m_Shader: {fileID: 4800000, guid: bd2222a9abe9bd6448228306ce43119d, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 1
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs: []
-    m_Ints: []
-    m_Floats:
-    - _ColorMask: 15
-    - _StencilComp: 8
-    - _StencilID: 1
-    - _StencilOp: 0
-    - _StencilOpPass: 2
-    - _StencilReadMask: 0
-    - _StencilWriteMask: 255
-    - _ZOffsetFactor: 0
-    - _ZOffsetUnits: 0
-    - _ZTest: 4
-    m_Colors: []
-  m_BuildTextureStacks: []
 --- !u!1 &1279872666
 GameObject:
   m_ObjectHideFlags: 0
@@ -18332,6 +18297,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 76e5e301287dd7345b9d8b8bd4482b5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ownRectTransform: {fileID: 1454717716}
+  uiManager: {fileID: 275838951}
   openMenuCurve:
     serializedVersion: 2
     m_Curve:
@@ -21515,6 +21482,43 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1705380182}
   m_CullTransparentMesh: 1
+--- !u!21 &1707644478
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Rect Additive (instance)
+  m_Shader: {fileID: 4800000, guid: bd2222a9abe9bd6448228306ce43119d, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _ColorMask: 15
+    - _StencilComp: 8
+    - _StencilID: 1
+    - _StencilOp: 0
+    - _StencilOpPass: 2
+    - _StencilReadMask: 0
+    - _StencilWriteMask: 255
+    - _ZOffsetFactor: 0
+    - _ZOffsetUnits: 0
+    - _ZTest: 4
+    m_Colors: []
+  m_BuildTextureStacks: []
 --- !u!1 &1731189574
 GameObject:
   m_ObjectHideFlags: 0
@@ -23397,6 +23401,8 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   inActiveColor: {r: 0, g: 0, b: 0, a: 0}
+  button: {fileID: 1793735806}
+  image: {fileID: 1793735807}
 --- !u!1 &1804490597
 GameObject:
   m_ObjectHideFlags: 0

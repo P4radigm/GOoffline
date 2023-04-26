@@ -7,8 +7,8 @@ public class OnScreenMenu : MonoBehaviour
     private Vector2 scannerPosition;
     private Vector2 animStartPosition;
     private bool isAnimating = false;
-    private RectTransform ownRectTransform;
-    private UIStateManager uiManager;
+    [SerializeField] private RectTransform ownRectTransform;
+    [SerializeField] private UIStateManager uiManager;
 
     [Header("Open Menu Settings")]
     [SerializeField] private AnimationCurve openMenuCurve;

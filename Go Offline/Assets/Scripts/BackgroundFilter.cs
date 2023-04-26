@@ -17,8 +17,8 @@ public class BackgroundFilter : MonoBehaviour
     private bool isAnimating = false;
     private Color currentColor;
 
-    private Button button;
-    private Image image;
+    [SerializeField] private Button button;
+    [SerializeField] private Image image;
 
     private void Start()
     {

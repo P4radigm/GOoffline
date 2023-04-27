@@ -77,6 +77,7 @@ public class CollectionManager : MonoBehaviour
     {
         collectibleManager = CollectibleManager.instance;
         settingsManager = SettingsManager.instance;
+        SetUIcorrectly(settingsManager.settings.sortingMode);
         selectedSortingMethod = (sortingOption)settingsManager.settings.sortingMode;
         sortingMenuOpen = false;
         isAnimating = false;
@@ -145,10 +146,10 @@ public class CollectionManager : MonoBehaviour
         switch (sortingMethod)
         {
             case sortingOption.timeDown:
-                sortedUnits = collectibleManager.collectedUnits.OrderBy(c => c.firstScanDateUtc).ToList();
+                sortedUnits = collectibleManager.collectedUnits.OrderByDescending(c => c.firstScanDateUtc).ToList();
                 break;
             case sortingOption.timeUp:
-                sortedUnits = collectibleManager.collectedUnits.OrderByDescending(c => c.firstScanDateUtc).ToList();
+                sortedUnits = collectibleManager.collectedUnits.OrderBy(c => c.firstScanDateUtc).ToList();
                 break;
             case sortingOption.nameDown:
                 sortedUnits = collectibleManager.collectedUnits.OrderBy(c => c.collectibleName).ToList();
@@ -157,10 +158,10 @@ public class CollectionManager : MonoBehaviour
                 sortedUnits = collectibleManager.collectedUnits.OrderByDescending(c => c.collectibleName).ToList();
                 break;
             case sortingOption.levelDown:
-                sortedUnits = collectibleManager.collectedUnits.OrderBy(c => c.currentLevel).ToList();
+                sortedUnits = collectibleManager.collectedUnits.OrderByDescending(c => c.currentLevel).ToList();
                 break;
             case sortingOption.levelUp:
-                sortedUnits = collectibleManager.collectedUnits.OrderByDescending(c => c.currentLevel).ToList();
+                sortedUnits = collectibleManager.collectedUnits.OrderBy(c => c.currentLevel).ToList();
                 break;
             case sortingOption.rarityDown:
                 sortedUnits = collectibleManager.collectedUnits.OrderByDescending(c => c.rarity).ToList();
@@ -255,6 +256,24 @@ public class CollectionManager : MonoBehaviour
             }
         }
         
+    }
+
+    public void SetUIcorrectly(int modeIndex)
+    {
+        int buttonIndex = modeIndex / 2;
+        for (int i = 0; i < underlines.Length; i++)
+        {
+            float newLeft = i == buttonIndex ? underlinesOutLeft : underlinesInLeft;
+            underlines[i].offsetMin = new Vector2(newLeft, underlines[i].offsetMin.y);
+        }
+
+        //Set currect direction arrow active
+        for (int i = 0; i < directionArrows.Length; i++)
+        {
+            directionArrows[i].GetComponent<Image>().enabled = i == buttonIndex ? true : false;
+            directionArrows[i].localEulerAngles = i == buttonIndex ? new Vector3(0, 0, modeIndex % 2 == 0 ? 180 : 0) : Vector3.zero;
+
+        }
     }
 
     public void ToggleSortMenu()

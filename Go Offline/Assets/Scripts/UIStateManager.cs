@@ -67,13 +67,11 @@ public class UIStateManager : MonoBehaviour
         if(newState == InterfaceState.Scanner) 
         {
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
-            PlayerSettings.iOS.deferSystemGesturesMode = UnityEngine.iOS.SystemGestureDeferMode.BottomEdge;
             codeReader.SetScanningEnabled(true); 
         }
         else 
         {
             Screen.sleepTimeout = SleepTimeout.SystemSetting;
-            PlayerSettings.iOS.deferSystemGesturesMode = UnityEngine.iOS.SystemGestureDeferMode.None;
             codeReader.SetScanningEnabled(false); 
         }
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Shapes;
 using TMPro;
+using Unity.VisualScripting;
 
 public class CriticalQuestions : MonoBehaviour
 {
@@ -73,7 +74,7 @@ public class CriticalQuestions : MonoBehaviour
     {
         questionText.text = questionList[questionIndex];
         numberBikesText.text = $"You scanned {collectibleManager.collectedUnits.Count} bikes";
-        levelUpText.text = $"You've reached level {questionIndex + 1}:";
+        levelUpText.text = $"You've reached <color=#{collectibleManager.swapfietsColors[questionIndex].ToHexString()}>level {questionIndex + 1}</color>:";
         levelNameText.text = levelNames[questionIndex];
         levelNumberText.text = (questionIndex + 1).ToString();
 

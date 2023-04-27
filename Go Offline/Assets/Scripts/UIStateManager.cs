@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using UnityEditor;
 
 public class UIStateManager : MonoBehaviour
 {
@@ -44,6 +45,8 @@ public class UIStateManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
     }
 
     private void Start()
@@ -61,8 +64,18 @@ public class UIStateManager : MonoBehaviour
     public void SetInterfaceState(InterfaceState newState)
     {
         activeInterfaceState = newState;
-        if(newState == InterfaceState.Scanner) { codeReader.SetScanningEnabled(true); }
-        else { codeReader.SetScanningEnabled(false); }
+        if(newState == InterfaceState.Scanner) 
+        {
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
+            PlayerSettings.iOS.deferSystemGesturesMode = UnityEngine.iOS.SystemGestureDeferMode.BottomEdge;
+            codeReader.SetScanningEnabled(true); 
+        }
+        else 
+        {
+            Screen.sleepTimeout = SleepTimeout.SystemSetting;
+            PlayerSettings.iOS.deferSystemGesturesMode = UnityEngine.iOS.SystemGestureDeferMode.None;
+            codeReader.SetScanningEnabled(false); 
+        }
     }
 
     private void InitToWelcome()

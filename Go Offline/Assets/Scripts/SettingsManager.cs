@@ -49,7 +49,7 @@ public class SettingsManager : MonoBehaviour
     {
         //configController.SetupInitialValue(settings.cameraConfig);
         Application.targetFrameRate = 60;
-        if (cameraManager.currentConfiguration != null && cameraManager.currentConfiguration.HasValue)
+        if (cameraManager.currentConfiguration.HasValue)
         {
             Application.targetFrameRate = (int)cameraManager.currentConfiguration.Value.framerate;
         }

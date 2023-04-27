@@ -11,10 +11,14 @@ public class CriticalQuestions : MonoBehaviour
 
     [SerializeField] private GameObject parent;
     [SerializeField] private string[] questionList;
+    [SerializeField] private string[] levelNames;
     [SerializeField] private Rectangle[] coloredRectangles;
     [SerializeField] private Disc[] coloredDiscs;
     [SerializeField] private TextMeshProUGUI questionText;
-    [SerializeField] private TextMeshProUGUI numberText;
+    [SerializeField] private TextMeshProUGUI levelNumberText;
+    [SerializeField] private TextMeshProUGUI numberBikesText;
+    [SerializeField] private TextMeshProUGUI levelUpText;
+    [SerializeField] private TextMeshProUGUI levelNameText;
 
     private float delayTimer = 0;
     private bool delaying = false;
@@ -68,7 +72,10 @@ public class CriticalQuestions : MonoBehaviour
     public void ShowQuestion(int questionIndex, float delay)
     {
         questionText.text = questionList[questionIndex];
-        numberText.text = questionIndex.ToString();
+        numberBikesText.text = $"You scanned {collectibleManager.collectedUnits.Count} bikes";
+        levelUpText.text = $"You've reached level {questionIndex + 1}:";
+        levelNameText.text = levelNames[questionIndex];
+        levelNumberText.text = (questionIndex + 1).ToString();
 
         RecolorHighlights(collectibleManager.swapfietsColors[questionIndex]);
 

@@ -127,7 +127,7 @@ public class LevelUpCollectibleBehaviour : CollectibleVisualManager
 
             if (animationTimer <= 0)
             {
-                collectibleGenerator.IncrementCollectibleLevel(visibleUnit, endLevel);
+                collectibleGenerator.IncrementCollectibleLevel(visibleUnit, endLevel-startLevel);
                 gameObject.SetActive(false); 
             }
         }

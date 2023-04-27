@@ -130,6 +130,7 @@ public class CollectibleGenerator : MonoBehaviour
             }
 
             //Show Level Up to player
+            levelCollectibleVisual.gameObject.SetActive(true);
             levelCollectibleVisual.StartLevelAnim(scannedCollectible, Mathf.FloorToInt(possibleLevelIncrement));
            
             return;
@@ -189,6 +190,15 @@ public class CollectibleGenerator : MonoBehaviour
         // Increment the currentLevel attribute
         loadedUnit.currentLevel += levelIncrement;
         Mathf.Clamp(loadedUnit.currentLevel, 0, 99);
+
+        //Update Collectible values in the collectibles list
+        for (int i = 0; i < collectibleManager.collectedUnits.Count; i++)
+        {
+            if (collectibleManager.collectedUnits[i].collectibleName == loadedUnit.collectibleName)
+            {
+                collectibleManager.collectedUnits[i] = loadedUnit;
+            }
+        }
 
         //Set last scanned time
         loadedUnit.lastScanDateUtc = CollectibleManager.DateTimeToLong(DateTime.UtcNow);

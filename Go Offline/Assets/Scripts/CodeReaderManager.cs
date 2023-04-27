@@ -10,6 +10,8 @@ using Unity.XR.CoreUtils;
 using System.Collections;
 using System.Collections.Generic;
 using Shapes;
+using Unity.Collections.LowLevel.Unsafe;
+using System;
 
 public class CodeReaderManager : MonoBehaviour {
 
@@ -23,12 +25,16 @@ public class CodeReaderManager : MonoBehaviour {
     [SerializeField] private ARCameraManager cameraManager;
     [SerializeField] private CanvasScaler canvasScaler;
     [SerializeField] private RectTransform scanArea;
-    private Texture2D cameraImageTexture;
+
+    private Texture2D cameraImageTextureR8;
+    private Texture2D cameraImageTextureRGBA32;
+    private TextureFormat textureFormat;
     private Result result;
+
     private bool firstImage = true;
+
     private CollectibleGenerator collectibleGenerator;
     private SettingsManager settingsManager;
-    //private Color swapfietsColor;
 
     private IBarcodeReader barcodeReader = new BarcodeReader {
         AutoRotate = true,
@@ -70,12 +76,6 @@ public class CodeReaderManager : MonoBehaviour {
     public scannerState currentState;
     public bool scanningEnabled;
 
-    [Header("Debug")]
-    //[SerializeField] private TextMeshProUGUI debugResultText;
-    //[Space(10)]
-    //[Space(10)]
-    //[SerializeField] private Image debugImage;
-
     public static CodeReaderManager instance = null;
 
     private void Awake()
@@ -95,16 +95,16 @@ public class CodeReaderManager : MonoBehaviour {
 
     private void Start()
     {
-        firstImage = true;
         collectibleGenerator = CollectibleGenerator.instance;
         settingsManager = SettingsManager.instance;
+
+        firstImage = true;
+        textureFormat = TextureFormat.R8;
     }
 
     private void OnEnable() {
         //Subscribe to frameRecieved event
         cameraManager.frameReceived += OnCameraFrameReceived;
-
-        //debugResultText.text = "No Barcode Found";
     }
 
     private void OnDisable() {
@@ -113,17 +113,25 @@ public class CodeReaderManager : MonoBehaviour {
     }
 
     private void OnCameraFrameReceived(ARCameraFrameEventArgs eventArgs) {
+        HandleCameraImageToResult();
+    }
+
+    unsafe void HandleCameraImageToResult()
+    {
         //Checks if we should even be scanning
-        if (!scanningEnabled || currentState == scannerState.cooldown) {
+        if (!scanningEnabled || currentState == scannerState.cooldown)
+        {
             return;
         }
 
         //Checks if we can access the latest Camera image
-        if (!cameraManager.TryAcquireLatestCpuImage(out XRCpuImage image)) {
+        if (!cameraManager.TryAcquireLatestCpuImage(out XRCpuImage image))
+        {
             Debug.LogWarning("Can't access the camera image output");
             return;
         }
 
+        //First time setup only calculates the focusRect based on the first recieved CPUimage
         if (firstImage)
         {
             //Image size = 640 x 480
@@ -134,13 +142,12 @@ public class CodeReaderManager : MonoBehaviour {
             float xBuffer = xBufferPercentage * 0.01f;
             float yBuffer = yBufferPercentage * 0.01f;
 
-            //Get Canvas Scaler max coords based on reference resolution (not dynamic when MatchWidthHeight gets changed from 1)
-            float maxCoordX = canvasScaler.referenceResolution.y * ((float)Screen.width / (float)Screen.height);
-            float maxCoordY = canvasScaler.referenceResolution.y;
+            //Get Canvas Scaler max coords
+            float maxCoordX = canvasScaler.GetComponent<RectTransform>().sizeDelta.x;
+            float maxCoordY = canvasScaler.GetComponent<RectTransform>().sizeDelta.y;
 
             //Calc screenspace overlay for what part of the image gets scanned
             scanArea.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff - xBuffer, 0, 100)), Mathf.CeilToInt(maxCoordY * Mathf.Clamp(yCutoff - yBuffer, 0, 100)));
-            //debugImage.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordY * yCutoff), Mathf.CeilToInt(maxCoordX * xCutoff));
 
             float leftAnchor = ((float)image.width / 2f) - ((float)image.width * yCutoff / 2f);
             float botAnchor = ((float)image.height / 2f) - (((float)image.width * ((float)Screen.width / (float)Screen.height)) * xCutoff / 2f);
@@ -151,7 +158,6 @@ public class CodeReaderManager : MonoBehaviour {
             if (squareBasedOnXPercentage)
             {
                 scanArea.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff - xBuffer, 0, 100)), Mathf.CeilToInt(maxCoordX * Mathf.Clamp(xCutoff - xBuffer, 0, 100)));
-                //debugImage.rectTransform.sizeDelta = new Vector2Int(Mathf.CeilToInt(maxCoordX * xCutoff), Mathf.CeilToInt(maxCoordX * xCutoff));
 
                 leftAnchor = ((float)image.width / 2f) - (((float)image.width * ((float)Screen.width / (float)Screen.height)) * xCutoff / 2f);
                 imageWidth = ((float)image.width * ((float)Screen.width / (float)Screen.height)) * xCutoff;
@@ -169,57 +175,76 @@ public class CodeReaderManager : MonoBehaviour {
 
         #region getting image
 
-        var conversionParams = new XRCpuImage.ConversionParams {
+        //Set converion parameters
+        var conversionParams = new XRCpuImage.ConversionParams
+        {
             // Get the center of the image based on the Focus Rect
             inputRect = pictureFocusRect,
 
             // Downsample by downSampleFactor.
             outputDimensions = new Vector2Int(pictureFocusRect.width / settingsManager.settings.scannerDownscaleFactor, pictureFocusRect.height / settingsManager.settings.scannerDownscaleFactor),
 
-            // Choose RGBA format.
-            outputFormat = TextureFormat.RGBA32,
+            // Choose Grayscale format.
+            outputFormat = textureFormat,
 
             // Flip across the vertical axis (mirror image).
             transformation = XRCpuImage.Transformation.MirrorY
         };
 
-        // See how many bytes you need to store the final image.
-        int size = image.GetConvertedDataSize(conversionParams);
+        //Set texture to match the conversion parameters if that hasn't been set up already
+        if (cameraImageTextureR8 == null || cameraImageTextureR8.width != conversionParams.outputDimensions.x || cameraImageTextureR8.height != conversionParams.outputDimensions.y)
+        {
+            cameraImageTextureR8 = new Texture2D(
+                conversionParams.outputDimensions.x,
+                conversionParams.outputDimensions.y,
+                conversionParams.outputFormat,
+                false);
+        }
 
-        // Allocate a buffer to store the image.
-        var buffer = new NativeArray<byte>(size, Allocator.Temp);
+        if (cameraImageTextureRGBA32 == null || cameraImageTextureRGBA32.width != conversionParams.outputDimensions.x || cameraImageTextureRGBA32.height != conversionParams.outputDimensions.y)
+        {
+            cameraImageTextureRGBA32 = new Texture2D(
+                conversionParams.outputDimensions.x,
+                conversionParams.outputDimensions.y,
+                TextureFormat.RGBA32,
+                false);
+        }
 
-        // Extract the image data
-        image.Convert(conversionParams, buffer);
+        // Texture2D allows us write directly to the raw texture data
+        // This allows us to do the conversion in-place without making any copies.
+        var rawTextureData = cameraImageTextureR8.GetRawTextureData<byte>();
+        try
+        {
+            image.Convert(conversionParams, new IntPtr(rawTextureData.GetUnsafePtr()), rawTextureData.Length);
+        }
+        finally
+        {
+            // We must dispose of the XRCpuImage after we're finished
+            // with it to avoid leaking native resources.
+            image.Dispose();
+        }
 
-        // The image was converted to RGBA32 format and written into the provided buffer
-        // so you can dispose of the XRCpuImage. You must do this or it will leak resources.
-        image.Dispose();
+        // Apply the updated texture data to our texture
+        cameraImageTextureR8.Apply();
 
-        // You've got the data; let's put it into a texture so you can visualize it.
-        cameraImageTexture = new Texture2D(
-            conversionParams.outputDimensions.x,
-            conversionParams.outputDimensions.y,
-            conversionParams.outputFormat,
-            false);
-
-        cameraImageTexture.LoadRawTextureData(buffer);
-        cameraImageTexture.Apply();
-
-        // Done with your temporary data, so you can dispose it.
-        buffer.Dispose();
+        //Convert r8 format to rgba32 format for ZXing barcodeReader
+        byte[] pixelsR8 = cameraImageTextureR8.GetRawTextureData();
+        Color32[] pixelsRGBA32 = new Color32[pixelsR8.Length];
+        for (int i = pixelsR8.Length - 1; i != -1; i--)
+        {
+            byte value = pixelsR8[i];
+            pixelsRGBA32[i] = new Color32(value, value, value, 255);//simplest R8 to RGBA32 conversion
+        }
+        cameraImageTextureRGBA32.SetPixels32(pixelsRGBA32);//updates textureRGBA32 data in CPU memory
+        cameraImageTextureRGBA32.Apply();//sends textureRGBA32 data from CPU memory to GPU (without this rendering wont change a bit)
 
         #endregion
 
         // Detect and decode the barcode inside the bitmap
-        result = barcodeReader.Decode(cameraImageTexture.GetPixels32(), cameraImageTexture.width, cameraImageTexture.height);
-
-        //Send to debug image visualiser
-        //Sprite debugSprite = Sprite.Create(cameraImageTexture, new Rect(0, 0, cameraImageTexture.width, cameraImageTexture.height), new Vector2(0.5f, 0.5f));
-        //debugImage.sprite = debugSprite;
+        result = barcodeReader.Decode(cameraImageTextureRGBA32.GetPixels32(), cameraImageTextureRGBA32.width, cameraImageTextureRGBA32.height);
 
         //Check if we even have a result
-        if(result == null)
+        if (result == null)
         {
             return;
         }
@@ -228,14 +253,14 @@ public class CodeReaderManager : MonoBehaviour {
         if (currentState == scannerState.searching)
         {
             tempListOfResults.Clear();
-            if(result.Text.Length == 8) { tempListOfResults.Add(result); }
-            
+            if (result.Text.Length == 8) { tempListOfResults.Add(result); }
+
 
             scanTimer = scanLength;
             currentState = scannerState.scanning;
         }
         //In scanning process
-        else if(currentState == scannerState.scanning)
+        else if (currentState == scannerState.scanning)
         {
             if (result.Text.Length == 8) { tempListOfResults.Add(result); }
         }
@@ -271,12 +296,13 @@ public class CodeReaderManager : MonoBehaviour {
         if(currentState == scannerState.cooldown && cooldownTimer > 0)
         { 
             cooldownTimer -= Time.deltaTime; 
-        }
-        else if (currentState == scannerState.cooldown)
-        {
-            RecolorScannerRectangle(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, activeColor);
 
-            currentState = scannerState.searching;
+            if(cooldownTimer <= 0)
+            {
+                RecolorScannerRectangle(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, activeColor);
+
+                currentState = scannerState.searching;
+            }
         }
     }
 
@@ -297,7 +323,7 @@ public class CodeReaderManager : MonoBehaviour {
         //debugResultText.text = lastResult;
 
         //Send to New Collectible Generator (Need ot implement minigame step before that at some point)
-        collectibleGenerator.ScannedBarcode(newResult.Text, Random.Range(0, 5));
+        collectibleGenerator.ScannedBarcode(newResult.Text, UnityEngine.Random.Range(0, 5));
 
         lastResultText = newResult.Text;
     }

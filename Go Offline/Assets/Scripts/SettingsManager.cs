@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using System;
+using Unity.Collections;
+using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
+using UnityEngine.XR.ARFoundation.Samples;
 
 public class SettingsManager : MonoBehaviour
 {
@@ -13,6 +17,14 @@ public class SettingsManager : MonoBehaviour
     public int highScannerFactor;
     public int lowScannerFactor;
     private string filePath;
+    [SerializeField] private ARCameraManager m_CameraManager;
+    [SerializeField] private CameraConfigController configController;
+
+    public ARCameraManager cameraManager
+    {
+        get => m_CameraManager;
+        set => m_CameraManager = value;
+    }
 
     private void Awake()
     {
@@ -35,7 +47,12 @@ public class SettingsManager : MonoBehaviour
 
     private void Start()
     {
-
+        //configController.SetupInitialValue(settings.cameraConfig);
+        Application.targetFrameRate = 60;
+        if (cameraManager.currentConfiguration != null && cameraManager.currentConfiguration.HasValue)
+        {
+            Application.targetFrameRate = (int)cameraManager.currentConfiguration.Value.framerate;
+        }
     }
 
     private void TryReadSettingsFile()
@@ -56,6 +73,18 @@ public class SettingsManager : MonoBehaviour
     public void ChangeSortingMethod(int newSortingMethod)
     {
         settings.sortingMode = newSortingMethod;
+
+        string jsonString = JsonUtility.ToJson(settings);
+        File.WriteAllText(filePath, jsonString);
+    }
+
+    public void ChangeCameraConfig(int newIndex)
+    {
+        //settings.cameraConfig = newIndex;
+        if (cameraManager.currentConfiguration != null || cameraManager.currentConfiguration.Value.framerate != null)
+        {
+            Application.targetFrameRate = (int)cameraManager.currentConfiguration.Value.framerate;
+        }
 
         string jsonString = JsonUtility.ToJson(settings);
         File.WriteAllText(filePath, jsonString);
